@@ -27,7 +27,7 @@ jobs:
 
       # --- Basic: retrain via MLflow Project ---
       - name: Run MLflow Project
-        run: mlflow run MLProject --env-manager=local -P n_estimators=300 -P max_depth=16
+        run: mlflow run MLProject --experiment-name telco_churn_ci --env-manager=local -P n_estimators=300 -P max_depth=16
 
       - name: Extract model URI
         id: model
