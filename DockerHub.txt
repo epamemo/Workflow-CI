@@ -1,0 +1,12 @@
+Tautan Docker Hub image (Advance):
+https://hub.docker.com/r/epamemo/telco-churn-ci
+
+Image di-build & di-push otomatis oleh GitHub Actions memakai:
+    mlflow models build-docker -m runs:/<run_id>/model -n epamemo/telco-churn-ci:latest
+    docker push epamemo/telco-churn-ci:latest
+
+Menjalankan image (serving REST /invocations di port 8080):
+    docker run -p 8080:8080 epamemo/telco-churn-ci:latest
+
+CATATAN: ganti "epamemo" bila username Docker Hub Anda berbeda (samakan dengan
+secret DOCKERHUB_USERNAME).

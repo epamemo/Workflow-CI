@@ -1,0 +1,57 @@
+name: CI - MLflow Project Retrain
+
+# Basic: retrain model saat trigger dipantik.
+# Skilled: upload artefak model ke GitHub (actions/upload-artifact).
+# Advance: build Docker image via `mlflow models build-docker` + push ke Docker Hub.
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+env:
+  IMAGE_NAME: ${{ secrets.DOCKERHUB_USERNAME }}/telco-churn-ci
+  MLFLOW_TRACKING_URI: file://${{ github.workspace }}/mlruns
+
+jobs:
+  retrain:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12.7"
+
+      - name: Install MLflow
+        run: pip install mlflow==2.19.0 pandas==2.2.3 numpy==1.26.4 scikit-learn==1.5.2
+
+      # --- Basic: retrain via MLflow Project ---
+      - name: Run MLflow Project
+        run: mlflow run MLProject --env-manager=local -P n_estimators=300 -P max_depth=16
+
+      - name: Extract model URI
+        id: model
+        run: |
+          RUN_ID=$(python -c "import json;print(json.load(open('MLProject/run_info.json'))['run_id'])")
+          echo "run_id=$RUN_ID" >> "$GITHUB_OUTPUT"
+          echo "model_uri=runs:/$RUN_ID/model" >> "$GITHUB_OUTPUT"
+
+      # --- Skilled: simpan artefak ke GitHub ---
+      - name: Upload model artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: mlflow-model
+          path: mlruns/
+
+      # --- Advance: build & push Docker image ke Docker Hub ---
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Build Docker image from model
+        run: mlflow models build-docker -m "${{ steps.model.outputs.model_uri }}" -n "$IMAGE_NAME:latest"
+
+      - name: Push Docker image
+        run: docker push "$IMAGE_NAME:latest"
