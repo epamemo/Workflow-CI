@@ -23,7 +23,7 @@ jobs:
           python-version: "3.12.7"
 
       - name: Install MLflow
-        run: pip install mlflow==2.19.0 pandas==2.2.3 numpy==1.26.4 scikit-learn==1.5.2
+        run: pip install mlflow==2.22.0 pandas==2.2.3 numpy==1.26.4 scikit-learn==1.5.2
 
       # --- Basic: retrain via MLflow Project ---
       - name: Run MLflow Project
@@ -50,8 +50,10 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
+      # --env-manager local => base image python:<ver>-slim (bukan ubuntu+python3.9);
+      # mlflow 2.19 memakai get-pip.py yang sudah tak mendukung 3.9 sehinga build gagal.
       - name: Build Docker image from model
-        run: mlflow models build-docker -m "${{ steps.model.outputs.model_uri }}" -n "$IMAGE_NAME:latest"
+        run: mlflow models build-docker -m "${{ steps.model.outputs.model_uri }}" -n "$IMAGE_NAME:latest" --env-manager local
 
       - name: Push Docker image
         run: docker push "$IMAGE_NAME:latest"
